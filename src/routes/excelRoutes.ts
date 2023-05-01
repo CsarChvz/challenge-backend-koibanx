@@ -6,14 +6,11 @@ import {
   getTaskErrors,
 } from "../controllers/excelControllers";
 
-const upload = multer({ dest: "uploads/" });
-
 const router = Router();
 
-router.post("/upload", upload.single("file"), (req, res) => {
+router.post("/upload", (req, res) => {
   uploadExcel(req, res, req.app.locals.channel);
 });
-
 router.get("/:taskId/status", getTaskStatus);
 router.get("/:taskId/errors", getTaskErrors);
 router.get("/hello", (req, res) => res.send("Hello World!"));

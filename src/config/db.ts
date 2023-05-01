@@ -1,12 +1,15 @@
 import mongoose from "mongoose";
 
+let dbURI =
+  "mongodb+srv://cesarchavez8728:pandita9@backendchallengekoibanx.3nkilsm.mongodb.net/backend?retryWrites=true&w=majority";
+
 export async function connectDataBase() {
   try {
     await mongoose.connect(
-      "mongodb+srv://cesarchavez8728:pandita9@backendchallengekoibanx.3nkilsm.mongodb.net/backend_challenge_koibanx?retryWrites=true&w=majority"
+      "mongodb+srv://cesarchavez8728:pandita9@backendchallengekoibanx.3nkilsm.mongodb.net/backend?retryWrites=true&w=majority"
     );
-    console.log("Database connected");
+    console.log("$[MONOGOOSE]: Database connected");
   } catch (error) {
-    console.error("Error connecting to database:", error);
+    console.error("$[MONOGOOSE]: Error connecting to database:", error);
   }
 }
