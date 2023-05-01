@@ -23,10 +23,14 @@ export async function excelValidator(taskId: string) {
       files_id: file._id,
     });
 
+    // Se lee el archivo de la base de datos que se pidio
     const workbook = XLSX.read(buffer?.data.buffer, { type: "buffer" });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
-    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+    const jsonData: ExcelData[] = XLSX.utils.sheet_to_json(worksheet);
+
+    // Validación de los datos
+    let errorCount = 0;
 
     console.log("$[VALIDATOR-EXCEL]: ", jsonData);
   } catch (error) {
