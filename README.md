@@ -36,6 +36,14 @@ We have to have docker to initilize rabbitmq with docker.
 
 Run run the installation dependecies:
 
+### Enviroment Variables
+
+```env
+MONGODB_URI=[YOUR MONGODB URI]
+RABBIT_MQ=[RABBITMQ SERVER] || amqp://guest:guest@localhost:5672/
+PORT=[PORT] || 3000
+```
+
 ```bash
 npm i
 # or
