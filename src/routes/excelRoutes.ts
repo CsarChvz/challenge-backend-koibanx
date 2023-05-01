@@ -11,7 +11,7 @@ const router = Router();
 router.post("/upload", (req, res) => {
   uploadExcel(req, res, req.app.locals.channel);
 });
-router.get("/:taskId/status", getTaskStatus);
+router.get("/:taskId", getTaskStatus);
 router.get("/:taskId/errors", getTaskErrors);
 router.get("/hello", (req, res) => res.send("Hello World!"));
 

@@ -57,7 +57,117 @@ yarn start
 
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 💡 REST API
+
+This project provides a RESTful API for uploading Excel files, validating their format, and notifying the processing status. The uploaded Excel files are stored in MongoDB, and the validation results are returned as task status updates.
+
+## Endpoints
+
+### POST /tasks/upload
+
+Upload an Excel file for validation.
+
+#### Request Parameters
+
+- `file`: The Excel file to be uploaded. It should be a `.xlsx` file.
+
+#### Response
+
+- `taskId`: A unique identifier for the uploaded file's validation task.
+
+### GET /tasks/:taskId
+
+Retrieve the status of a validation task.
+
+#### URL Parameters
+
+- `taskId`: The unique identifier of the validation task.
+
+#### Response
+
+- `status`: The current status of the validation task. It can be "pending", "processing", or "done".
+- `errors`: The number of errors found in the Excel file.
+
+### GET /api/tasks/:taskId/errors
+
+Retrieve the errors found in the Excel file.
+
+#### URL Parameters
+
+- `taskId`: The unique identifier of the validation task.
+
+#### Query Parameters
+
+- `page`: The page number for paginated results (optional, default is 1).
+- `limit`: The number of errors per page (optional, default is 10).
+
+#### Response
+
+An array of error objects with the following properties:
+
+- `row`: The row number in the Excel file where the error occurred.
+- `column`: The column name in the Excel file where the error occurred.
+- `message`: A description of the error.
+
+## Example Requests and Responses
+
+### Uploading an Excel File
+
+**Request:**
+
+POST /tasks/upload
+Content-Type: multipart/form-data
+
+[file: example.xlsx]
+
+**Response:**
+
+```json
+{
+  "taskId": "60a8c9f5d5b5d2b1f4e8234c"
+}
+```
+
+### Retrieving a Task's Status
+
+**Request:**
+GET /api/tasks/60a8c9f5d5b5d2b1f4e8234c
+
+**Response:**
+
+```json
+{
+  "status": "done",
+  "errors": 3
+}
+```
+
+### Retrieving a Task's Errors
+
+**Request:**
+GET /api/tasks/60a8c9f5d5b5d2b1f4e8234c/errors?page=1&limit=10
+
+**Response:**
+
+```json
+[
+  {
+    "row": 2,
+    "column": "name",
+    "message": "Invalid data type, expected string"
+  },
+  {
+    "row": 3,
+    "column": "age",
+    "message": "Invalid data type, expected number"
+  },
+  {
+    "row": 4,
+    "column": "age",
+    "message": "Invalid data type, expected number"
+  }
+]
+```
 
 ## 📝 Justification of the use of "Rabbit MQ"
 
@@ -79,7 +189,7 @@ RabbitMQ is a task queue messaging solution (message broker) that uses the Advan
   <figure>
     <div class="image-container">
     <img src="https://avatars.githubusercontent.com/u/79390377?v=4" alt="CsarChvz" style="width: 100%; height: auto; border-radius: 50%"/>
-    
+
 </div>
     <figcaption>
       <h1 align="center">
@@ -87,3 +197,4 @@ RabbitMQ is a task queue messaging solution (message broker) that uses the Advan
       </h1>
     </figcaption>
   </figure>
+```
