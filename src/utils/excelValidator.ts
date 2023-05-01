@@ -11,6 +11,10 @@ interface ExcelData {
 
 export async function excelValidator(taskId: string) {
   try {
+    await TaskModel.findByIdAndUpdate(taskId, {
+      status: "processing",
+    });
+
     const file = await connection
       .collection("excel_files.files")
       .findOne({ filename: `${taskId}.xlsx` });
@@ -28,35 +32,44 @@ export async function excelValidator(taskId: string) {
     const workbook = XLSX.read(buffer?.data.buffer, { type: "buffer" });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
+    const dataRaw = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
     // Antes de comprobar los datos se puede hacer una validación de que el archivo tenga el formato correcto
     // En este caso se puede validar que el archivo tenga la cantidad de columnas correctas y que tengan el nombre correcto
     let errorCount = 0;
-
+    const columnas: any = dataRaw[0];
     const columnsNames = ["name", "age", "nums"];
-    const columns = Object.keys(worksheet);
-    if (columns.length !== columnsNames.length) {
+    // Se debe de checar que las columnas o el array sean iguales
+
+    if (!arraysEqual(columnas, columnsNames)) {
       const error = new ErrorModel({
-        taskId: taskId,
+        taskId,
+        column: "N/A - file-format",
         row: 0,
-        column: "file-format",
-        message: "Invalid file format - Columns Different",
+        message: "El archivo no tiene el formato correcto",
       });
-      error.save();
+      await error.save();
       errorCount++;
+
+      await TaskModel.findByIdAndUpdate(taskId, {
+        status: "done",
+        errors: errorCount,
+      });
       return;
     }
 
-    const data: ExcelData[] = XLSX.utils.sheet_to_json(worksheet);
+    const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-    // Validación de los datos -- Se puede mejorar
-    // En este caso se puede hacer unas reglas para la validación de los datos dependiendo del archivo/tarea
-    // En este caso se puede definir que columnas deben de estar definidas y que tipo de dato deben de ser (string, number, array, etc)
-    // para el archivo que se busca subir
+    let json: ExcelData[] = jsonData.map((row: any) => {
+      let nums = row.nums.split(",").map((num: string) => parseInt(num));
+      return {
+        name: row.name,
+        age: row.age,
+        nums: nums,
+      };
+    });
 
-    // Para este caso se definió la tabla que ponen de ejemplo. Se valida que los datos sean del tipo correcto
-
-    data.forEach((row: ExcelData, rowIndex: number) => {
+    json.forEach(async (row: ExcelData, rowIndex: number) => {
       if (typeof row.name !== "string") {
         const error = new ErrorModel({
           taskId: taskId,
@@ -80,6 +93,7 @@ export async function excelValidator(taskId: string) {
       }
 
       if (!Array.isArray(row.nums)) {
+        // Después se tiene que checar que el array tenga puros valores numericos
         const error = new ErrorModel({
           taskId: taskId,
           row: rowIndex + 1,
@@ -88,66 +102,41 @@ export async function excelValidator(taskId: string) {
         });
         error.save();
         errorCount++;
+      } else {
+        row.nums.forEach((num: number, index: number) => {
+          if (typeof num !== "number") {
+            const error = new ErrorModel({
+              taskId: taskId,
+              row: rowIndex + 1,
+              column: `nums[${index}]`,
+              message: "Invalid data type, expected number-array",
+            });
+            error.save();
+            errorCount++;
+          }
+        });
       }
     });
 
+    // Actualizamos el estado de la tarea
     await TaskModel.findByIdAndUpdate(taskId, {
       status: "done",
       errors: errorCount,
     });
-    console.log("$[VALIDATOR-EXCEL]: ", data);
+
+    console.log("Excel file processed");
   } catch (error) {
     console.error("Error processing Excel file:", error);
   }
 }
 
-// const readStream = gfs.createReadStream({
-//   filename: `${taskId}.xlsx`,
-// });
-// const chunks: any[] = [];
-// const bufferPromise = new Promise<Buffer>((resolve, reject) => {
-//   readStream
-//     .on("data", (chunk) => chunks.push(chunk))
-//     .on("error", reject)
-//     .on("end", () => resolve(Buffer.concat(chunks)));
-// });
+function arraysEqual(arr1: string[], arr2: string[]) {
+  if (arr1.length !== arr2.length) {
+    return false;
+  }
 
-// const buffer = await bufferPromise;
-// // Obtenemos el archivo de la base de datos
-// const workbook = XLSX.read(buffer, { type: "buffer" });
-// const firstSheetName = workbook.SheetNames[0];
-// const worksheet = workbook.Sheets[firstSheetName];
-// const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-// let errorCount = 0;
-
-// console.log("$[VALIDATOR-EXCEL]: ", jsonData);
-
-// data.forEach((row: ExcelData, rowIndex: number) => {
-//   if (typeof row.name !== "string") {
-//     const error = new ErrorModel({
-//       taskId: taskId,
-//       row: rowIndex + 1,
-//       column: "name",
-//       message: "Invalid data type, expected string",
-//     });
-//     error.save();
-//     errorCount++;
-//   }
-
-//   if (typeof row.age !== "number") {
-//     const error = new ErrorModel({
-//       taskId: taskId,
-//       row: rowIndex + 1,
-//       column: "age",
-//       message: "Invalid data type, expected number",
-//     });
-//     error.save();
-//     errorCount++;
-//   }
-// });
-
-// await TaskModel.findByIdAndUpdate(taskId, {
-//   status: "done",
-//   errors: errorCount,
-// });
+  return (
+    arr1.every((elem) => arr2.includes(elem)) &&
+    arr2.every((elem) => arr1.includes(elem))
+  );
+}
