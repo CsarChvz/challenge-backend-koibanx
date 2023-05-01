@@ -45,8 +45,6 @@ PORT=[PORT] || 3000
 ```
 
 ```bash
-npm i
-# or
 yarn add package.json
 ```
 
